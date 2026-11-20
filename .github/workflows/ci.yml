@@ -1,0 +1,51 @@
+name: Gateway checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  gateway:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-latest]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - run: rustup toolchain install 1.100.0 --profile minimal --component rustfmt --component clippy
+      - run: cargo fmt --all --check
+      - run: cargo clippy --locked --all-targets -- -D warnings
+      - run: cargo test --locked
+      - if: runner.os == 'Linux'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: timy4080-maker/spora-sec
+          ref: ad707a13b0ba15119f85280348f9d635074a06ce
+          path: .local/sec
+          persist-credentials: false
+      - if: runner.os == 'Linux'
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          repository: timy4080-maker/spora-relay
+          ref: 97d5b5c02ebc719f86d9d192aa42e1a25c913797
+          path: .local/relay
+          persist-credentials: false
+      - name: Offline delivery and return receipt through two gateways
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --retry 3 https://github.com/protocolbuffers/protobuf/releases/download/v36.2/protoc-36.2-linux-x86_64.zip -o .local/protoc.zip
+          echo '121f6c7afe1d4d0e3ea6aab9432038599250134cbf4474cb1167d2c7decd4278  .local/protoc.zip' | sha256sum --check
+          unzip -q .local/protoc.zip -d .local/protoc
+          export PROTOC="$PWD/.local/protoc/bin/protoc"
+          export CARGO_TARGET_DIR="$PWD/target"
+          cargo build --locked
+          cargo build --locked --manifest-path .local/sec/Cargo.toml --bin spora-sec
+          cargo build --locked --manifest-path .local/relay/Cargo.toml --bin spora-relay
+          python3 scripts/offline_lab.py --gateway target/debug/spora-gateway --client target/debug/spora-sec --relay target/debug/spora-relay --output .local/offline-lab.json
+      - if: runner.os == 'Linux'
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: offline-gateway-lab
+          path: .local/offline-lab.json
+          if-no-files-found: error

@@ -1,0 +1,6 @@
+/target/
+/.local/
+*.db*
+*.pem
+*.key
+__pycache__/

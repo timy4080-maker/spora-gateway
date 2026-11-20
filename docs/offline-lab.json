@@ -1,0 +1,36 @@
+{
+  "channel": "in-process synthetic chunks; no inter-gateway IP route",
+  "gateway_count": 2,
+  "local_tls_relays": 2,
+  "sec01_client_profiles": 2,
+  "test_messages_applied": 1,
+  "authenticated_processing_receipts": 1,
+  "messages_after_retry": 1,
+  "data": {
+    "envelope_bytes": 1970,
+    "bundle_bytes": 2015,
+    "fragments": 20
+  },
+  "receipt": {
+    "envelope_bytes": 249,
+    "bundle_bytes": 294,
+    "fragments": 3
+  },
+  "faults": [
+    "reordered and duplicate chunks",
+    "partial assembly and both gateway processes restarted",
+    "lost peer stored acknowledgement",
+    "destination relay offline",
+    "gateway exited after real relay PUT",
+    "return path down",
+    "retry after receiver consumed relay copy"
+  ],
+  "extra_path_policy_checks": [
+    "C-05 TLS peer address binding",
+    "radio and IP normalize to one peer transfer",
+    "IP service recovery hold of 30 seconds",
+    "4052-byte envelope goes only over permitted IP"
+  ],
+  "rf_measurements": false,
+  "hardware_acceptance": "pending"
+}
